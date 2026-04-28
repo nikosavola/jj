@@ -860,6 +860,33 @@ concat(
 'json:x' = 'json(x) ++ "\n"'
 ```
 
+## Built-in redacted templates
+
+`jj` ships with built-in templates that can be used to redact sensitive information (such as author emails and bookmark names) from the output of `jj log` and `jj op log`.
+
+For example, to redact the output of `jj log` and `jj op log`, you can use the `builtin_log_redacted` and `builtin_op_log_redacted` templates:
+
+```sh
+jj log -T builtin_log_redacted
+jj op log -T builtin_op_log_redacted
+```
+
+To fully redact the output of `jj op log -d`, you can also override the commit summary template it uses for the "Changed commits" section:
+
+```toml
+[templates]
+op_log = 'builtin_op_log_redacted'
+op_log_commit_summary = 'builtin_commit_summary_redacted'
+```
+
+Alternatively, ad hoc via the CLI:
+
+```sh
+jj op log -d \
+  --config templates.op_log='builtin_op_log_redacted' \
+  --config templates.op_log_commit_summary='builtin_commit_summary_redacted'
+```
+
 ## Examples
 
 Get short commit IDs of the working-copy parents:
