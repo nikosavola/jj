@@ -48,6 +48,9 @@ use crate::ui::Ui;
 /// Like other commands, `jj op log` snapshots the current working-copy changes
 /// and reconciles divergent operations. Use `--at-op=@ --ignore-working-copy`
 /// to inspect the current state without mutation.
+///
+/// To redact the output (e.g. for sharing bug reports), use:
+/// `jj op log -d --config templates.op_log=builtin_op_log_redacted --config templates.op_log_commit_summary=builtin_commit_summary_redacted`
 #[derive(clap::Args, Clone, Debug)]
 pub struct OperationLogArgs {
     /// Limit number of operations to show
@@ -163,7 +166,9 @@ async fn do_op_log(
 
     let diff_formats = diff_formats_for_log(settings, &args.diff_format, args.patch)?;
     let maybe_show_op_diff = if args.op_diff || !diff_formats.is_empty() {
-        let template_text = settings.get_string("templates.commit_summary")?;
+        let template_text = settings
+            .get_string("templates.op_log_commit_summary")
+            .unwrap_or_else(|_| settings.get_string("templates.commit_summary").unwrap());
         let op_diff_changes_expr =
             parse_op_diff_changes_in(ui, settings, workspace_env, args.show_changes_in.as_deref())?;
         let show = async move |ui: &Ui,

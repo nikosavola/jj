@@ -146,7 +146,9 @@ pub async fn cmd_op_diff(
     let id_prefix_context = workspace_env.new_id_prefix_context();
     let commit_summary_template = {
         let language = workspace_env.commit_template_language(merged_repo, &id_prefix_context);
-        let text = settings.get_string("templates.commit_summary")?;
+        let text = settings
+            .get_string("templates.op_log_commit_summary")
+            .unwrap_or_else(|_| settings.get_string("templates.commit_summary").unwrap());
         workspace_env
             .parse_template(ui, &language, &text)?
             .labeled(["op_diff", "commit"])

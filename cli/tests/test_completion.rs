@@ -1479,6 +1479,7 @@ fn test_template_alias() {
 
     let output = test_env.complete_fish(["log", "-T", ""]);
     insta::assert_snapshot!(output, @"
+    builtin_commit_summary_redacted
     builtin_config_list
     builtin_config_list_detailed
     builtin_draft_commit_description

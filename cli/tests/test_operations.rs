@@ -191,6 +191,7 @@ fn test_op_log_with_no_template() {
 
     For more information, try '--help'.
     Hint: The following template aliases are defined:
+    - builtin_commit_summary_redacted
     - builtin_config_list
     - builtin_config_list_detailed
     - builtin_draft_commit_description
@@ -3134,6 +3135,134 @@ fn test_op_log_anonymize() {
     ○  90267f31f904 user-5910 workspace-482a@ 2001-02-03 04:05:07.000 +07:00 - 2001-02-03 04:05:07.000 +07:00
     │  add workspace 'default'
     ○  000000000000 root()
+    [EOF]
+    ");
+}
+
+#[test]
+fn test_op_log_redacted() {
+    let test_env = TestEnvironment::default();
+    test_env.run_jj_in(".", ["git", "init", "repo"]).success();
+    let work_dir = test_env.work_dir("repo");
+    
+    work_dir.run_jj(["describe", "-m", "description 0"]).success();
+    let op_a = work_dir.current_operation_id();
+    work_dir.run_jj(["new", "-m", "description 1"]).success();
+
+    // Baseline: no overrides, output should match standard `op log -d`
+    let output_baseline = work_dir.run_jj(["op", "log", "-d"]);
+    insta::assert_snapshot!(output_baseline, @"
+    @  65deaafb6728 test-username@host.example.com default@ 2001-02-03 04:05:09.000 +07:00 - 2001-02-03 04:05:09.000 +07:00
+    │  new empty commit
+    │  args: jj new -m 'description 1'
+    │
+    │  Changed commits:
+    │  ○  + kkmpptxz 19befb8c (empty) description 1
+    │
+    │  Changed working copy default@:
+    │  + kkmpptxz 19befb8c (empty) description 1
+    │  - qpvuntsm 3ae22e7f (empty) description 0
+    ○  8501e29d2d94 test-username@host.example.com default@ 2001-02-03 04:05:08.000 +07:00 - 2001-02-03 04:05:08.000 +07:00
+    │  describe commit e8849ae12c709f2321908879bc724fdb2ab8a781
+    │  args: jj describe -m 'description 0'
+    │
+    │  Changed commits:
+    │  ○  + qpvuntsm 3ae22e7f (empty) description 0
+    │     - qpvuntsm/1 e8849ae1 (hidden) (empty) (no description set)
+    │
+    │  Changed working copy default@:
+    │  + qpvuntsm 3ae22e7f (empty) description 0
+    │  - qpvuntsm/1 e8849ae1 (hidden) (empty) (no description set)
+    ○  90267f31f904 test-username@host.example.com 2001-02-03 04:05:07.000 +07:00 - 2001-02-03 04:05:07.000 +07:00
+    │  add workspace 'default'
+    │
+    │  Changed commits:
+    │  ○  + qpvuntsm e8849ae1 (empty) (no description set)
+    │
+    │  Changed working copy default@:
+    │  + qpvuntsm e8849ae1 (empty) (no description set)
+    │  - (absent)
+    ○  000000000000 root()
+    [EOF]
+    ");
+
+    // Opt-in redaction: test `op log`
+    let output_log = work_dir.run_jj([
+        "op", "log", "-d",
+        "--config", "templates.op_log=builtin_op_log_redacted",
+        "--config", "templates.op_log_commit_summary=builtin_commit_summary_redacted",
+    ]);
+    insta::assert_snapshot!(output_log, @"
+    @  65deaafb6728 user-5910 workspace-ab88@ 2001-02-03 04:05:09.000 +07:00 - 2001-02-03 04:05:09.000 +07:00
+    │  new empty commit
+    │  (redacted)
+    │
+    │  Changed commits:
+    │  ○  + kkmpptxz 19befb8c (empty) (redacted)
+    │
+    │  Changed working copy default@:
+    │  + kkmpptxz 19befb8c (empty) (redacted)
+    │  - qpvuntsm 3ae22e7f (empty) (redacted)
+    ○  8501e29d2d94 user-5910 workspace-ab88@ 2001-02-03 04:05:08.000 +07:00 - 2001-02-03 04:05:08.000 +07:00
+    │  describe commit e8849ae12c709f2321908879bc724fdb2ab8a781
+    │  (redacted)
+    │
+    │  Changed commits:
+    │  ○  + qpvuntsm 3ae22e7f (empty) (redacted)
+    │     - qpvuntsm/1 e8849ae1 (hidden) (empty) (redacted)
+    │
+    │  Changed working copy default@:
+    │  + qpvuntsm 3ae22e7f (empty) (redacted)
+    │  - qpvuntsm/1 e8849ae1 (hidden) (empty) (redacted)
+    ○  90267f31f904 user-5910 workspace-482a@ 2001-02-03 04:05:07.000 +07:00 - 2001-02-03 04:05:07.000 +07:00
+    │  add workspace 'default'
+    │
+    │  Changed commits:
+    │  ○  + qpvuntsm e8849ae1 (empty) (redacted)
+    │
+    │  Changed working copy default@:
+    │  + qpvuntsm e8849ae1 (empty) (redacted)
+    │  - (absent)
+    ○  000000000000 root()
+    [EOF]
+    ");
+
+    // Opt-in redaction: test `op show`
+    let output_show = work_dir.run_jj([
+        "op", "show",
+        "--config", "templates.op_log=builtin_op_log_redacted",
+        "--config", "templates.op_log_commit_summary=builtin_commit_summary_redacted",
+    ]);
+    insta::assert_snapshot!(output_show, @"
+    65deaafb6728 test-username@host.example.com default@ 2001-02-03 04:05:09.000 +07:00 - 2001-02-03 04:05:09.000 +07:00
+    new empty commit
+    args: jj new -m 'description 1'
+
+    Changed commits:
+    ○  + kkmpptxz 19befb8c (empty) (redacted)
+
+    Changed working copy default@:
+    + kkmpptxz 19befb8c (empty) (redacted)
+    - qpvuntsm 3ae22e7f (empty) (redacted)
+    [EOF]
+    ");
+
+    // Opt-in redaction: test `op diff`
+    let output_diff = work_dir.run_jj([
+        "op", "diff", "--from", &op_a,
+        "--config", "templates.op_log=builtin_op_log_redacted",
+        "--config", "templates.op_log_commit_summary=builtin_commit_summary_redacted",
+    ]);
+    insta::assert_snapshot!(output_diff, @"
+    From operation: 8501e29d2d94 (2001-02-03 08:05:08) describe commit e8849ae12c709f2321908879bc724fdb2ab8a781
+      To operation: 65deaafb6728 (2001-02-03 08:05:09) new empty commit
+
+    Changed commits:
+    ○  + kkmpptxz 19befb8c (empty) (redacted)
+
+    Changed working copy default@:
+    + kkmpptxz 19befb8c (empty) (redacted)
+    - qpvuntsm 3ae22e7f (empty) (redacted)
     [EOF]
     ");
 }

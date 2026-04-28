@@ -586,6 +586,7 @@ fn test_evolog_with_no_template() {
 
     For more information, try '--help'.
     Hint: The following template aliases are defined:
+    - builtin_commit_summary_redacted
     - builtin_config_list
     - builtin_config_list_detailed
     - builtin_draft_commit_description

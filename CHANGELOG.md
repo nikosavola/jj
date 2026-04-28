@@ -25,6 +25,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### New features
 
+* The new `builtin_commit_summary_redacted` template and `templates.op_log_commit_summary` config key enable full redaction of `jj op log -d`.
+
 * The `--pattern` flag for `file search` now accepts various pattern kinds through
   `kind:pattern` syntax.
 
